@@ -16,9 +16,10 @@ Use this skill to turn a 3D objective into a deliberate iClone 8 operation. The 
 5. Execute in small stages: create/import, configure, animate, camera, render. Verify each stage with a read tool.
 6. Never claim that a render, animation, or color change succeeded without checking the resulting state.
 7. Use a real scene camera for animation. The iClone Preview Camera cannot be transform-animated.
-8. For humanoid movement, prefer native iClone skeletal motions over root-transform displacement.
+8. For humanoid movement, prefer native iClone skeletal motions; when none fits, author it with bone and IK keys (see below), never with root-transform displacement.
 9. Preserve each avatar's existing anchor position. Removing an animation must never become an unintended relocation.
 10. Keep the MCP server local. Do not expose port 8766 externally or invent TCP/UDP device protocols.
+11. Look before and after visual changes: `capture_viewport` for poses and scenes, `capture_window` for dialogs. When a dialog blocks the work, capture it, then `click`/`send_keys` instead of asking the user.
 
 ## Tool selection map
 
@@ -33,6 +34,9 @@ Use this skill to turn a 3D objective into a deliberate iClone 8 operation. The 
 - Lights: `get_light`, `set_light` for color, intensity, range, shadows, spot beam, IES, rectangle and tube settings.
 - Face and voice: `get_face_info`, `set_auto_blink`, `set_face_expressiveness`, `add_expression_keys`, `get_viseme_info`, `add_viseme_key`, `load_vocal` (experimental).
 - Avatars: `get_avatar_info`, `get_avatar_capabilities`, `get_skin_bones`, `get_animation_clips`, `set_clip_speed`, `set_clip_loop_count`.
+- Body animation (FK): `create_motion_clip`, `get_bone_transforms`, `set_bone_keys`, `delete_bone_keys`, `mirror_clip`, `sample_clip`, `flatten_clip`, `break_clip`, `merge_clips`, `delete_clip`, `bake_fk_to_ik`.
+- Body animation (IK): `get_ik_effectors`, `set_ik_pose`, `add_reach_key`, `add_look_at_key`.
+- Viewport and UI: `capture_viewport`, `list_windows`, `capture_window`, `click`, `send_keys`; `reload_tools` after editing tool modules.
 - Morphs: `list_morphs`, `get_morph_weight`, `set_morph_weight`.
 - Rendering: `get_render_settings`, `render_video`.
 - Mocap/network diagnostics: `get_mocap_status`, `get_network_capabilities`.
@@ -101,6 +105,33 @@ forth.
    motion file exists, clearly label root motion as a fallback, keep it subtle,
    and do not describe it as arm/hand/body gesture animation.
 
+### Author a body animation from scratch
+
+Use this for poses and actions with no suitable motion file (crouch, vault,
+death, gestures). Units are cm, Z is up, CC characters face -Y.
+
+1. `get_avatar_info` must report a skeleton. A CC character imported as a plain
+   FBX prop has none; load it as an iClone avatar instead.
+2. `create_motion_clip` covering the whole action. Bone and IK keys need a clip
+   under their frame. Keys are written on the clip's motion layer, on top of
+   whatever the clip already contains.
+3. Block the key poses with IK first: `get_ik_effectors` at the frame, then
+   `set_ik_pose` with world targets. Lowering `hip` z crouches while both feet
+   stay planted; hand/foot targets bend elbows/knees (use `pole` to choose the
+   bend direction); `rotation_degrees` sets a hand/foot world rotation.
+4. Refine with FK: `set_bone_keys` adds local rotation offsets (degrees,
+   applied X then Y then Z) per bone, e.g. spine lean, head turn, fingers.
+   Only the hip takes position offsets. Use `transition` for easing.
+5. Use `add_reach_key` for contacts with objects (hand on a barrier) and
+   `add_look_at_key` for gaze. They act on top of the keyed pose.
+6. For a weapon, `link_object` with `target_bone` (e.g. `CC_Base_R_Hand`) and
+   `frame: 0` so it follows the hand for the whole animation.
+7. After every pose, `capture_viewport` at that frame and compare with the
+   intent; check numbers with `get_bone_transforms`/`get_ik_effectors`.
+8. In-place loops: keep the hip's horizontal position the same at the first and
+   last frame, and make the first and last poses identical.
+9. `export_fbx` the avatar; the motion layer keys are included.
+
 ### Animate and film with a camera
 
 1. Find a real camera with `list_objects` and check it with `get_camera_capabilities`.
@@ -160,3 +191,4 @@ Report every tool result and any limitation.
 - If a material color is not visible, inspect materials and override the diffuse texture.
 - If a motion, texture, or FBX path fails, verify the path exists and report the iClone/API limitation.
 - If a tool returns an API error, preserve the error text, stop the dependent sequence, and do not claim completion.
+- If the server stops answering mid-sequence, iClone may have crashed; ask the user to restart it (the server starts automatically) and rebuild state from the last saved project.

@@ -34,25 +34,17 @@ def _tool_registry():
     # Reload tool modules when the server starts. iClone keeps Python modules in
     # memory after a stop/start cycle, while a developer may have updated them
     # on disk. This makes the Start button load the current plugin code.
-    from tools import avatar, camera, core, diagnostics, facial, lights, materials, mocap, morphs, objects, path, project, render, scene, timeline, transform
-    for module in (objects, core, scene, project, transform, path, materials, render, timeline, camera, lights, avatar, facial, morphs, mocap, diagnostics):
-        importlib.reload(module)
+    # Every module in tools/ with a register() function is picked up, so the
+    # reload_tools tool also sees modules added while iClone is running.
+    folder = os.path.join(os.path.dirname(__file__), "tools")
+    names = sorted(name[:-3] for name in os.listdir(folder) if name.endswith(".py") and not name.startswith("_"))
+    # Shared helpers are reloaded first so dependent modules bind their new code.
+    names = [name for name in ("common", "objects") if name in names] + [name for name in names if name not in ("common", "objects")]
     tools = {}
-    core.register(tools)
-    scene.register(tools)
-    project.register(tools)
-    transform.register(tools)
-    path.register(tools)
-    materials.register(tools)
-    render.register(tools)
-    timeline.register(tools)
-    camera.register(tools)
-    lights.register(tools)
-    avatar.register(tools)
-    facial.register(tools)
-    morphs.register(tools)
-    mocap.register(tools)
-    diagnostics.register(tools)
+    for name in names:
+        module = importlib.reload(importlib.import_module("tools." + name))
+        if hasattr(module, "register"):
+            module.register(tools)
     return tools
 
 
@@ -62,11 +54,12 @@ def start_server():
         if _server and _server.running:
             return "http://%s:%d/mcp" % (_server.host, _server.port)
         from dispatch import start as start_dispatch
-        from mcp_handler import MCPHandler
+        import mcp_handler
         from server import MCPServer
+        importlib.reload(mcp_handler)
         start_dispatch()
         config = _config()["server"]
-        candidate = MCPServer(MCPHandler(_tool_registry()), config["host"], config["port"])
+        candidate = MCPServer(mcp_handler.MCPHandler(_tool_registry(), _tool_registry), config["host"], config["port"])
         candidate.start()
         _server = candidate
         return "http://%s:%d/mcp" % (candidate.host, candidate.port)
@@ -145,6 +138,12 @@ def initialize_plugin():
         menu.setObjectName("mc_iclone8_mcp_menu")
     action = menu.addAction("Open MCP server")
     action.triggered.connect(show_dialog)
+    # The server runs for the whole iClone session; the dialog's Stop/Start still work.
+    QtWidgets.QApplication.instance().aboutToQuit.connect(stop_server)
+    try:
+        start_server()
+    except Exception as error:
+        print("mc-iclone8-mcp: server did not start automatically: %s" % error)
 
 
 def run_script():

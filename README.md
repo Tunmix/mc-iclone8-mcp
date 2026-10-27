@@ -21,9 +21,10 @@ back to iClone's main thread before they run.
    <iClone 8>\Bin64\OpenPlugin\mc-iclone8-mcp
    ```
 
-2. Start iClone 8 and load the plugin.
-3. Open **Plugins → mc-iclone8-mcp → Open MCP server**.
-4. Select **Start**. The status must show `http://127.0.0.1:8766/mcp`.
+2. Start iClone 8. The plugin starts the MCP server automatically at
+   `http://127.0.0.1:8766/mcp` and stops it when iClone closes.
+3. **Plugins → mc-iclone8-mcp → Open MCP server** shows the status and offers
+   **Stop**/**Start** buttons; **Start** also reloads the plugin's Python code.
 
 The server deliberately binds to `127.0.0.1`: it is intended for the computer
 running iClone, not for a network connection.
@@ -81,7 +82,7 @@ and [`docs/agent-configs.fr.md`](docs/agent-configs.fr.md).
    ```
 
    Do not mix old files from `tools` with the new release.
-5. Restart iClone 8, load the plugin, and click **Start**.
+5. Restart iClone 8; the server starts with it.
 6. Confirm the local URL and restart/reload the MCP client so it refreshes the
    tool list.
 
@@ -94,14 +95,14 @@ installed iClone build before using them on an important scene.
 
 The current development line adds the documented iClone 8 camera, material,
 light, facial/viseme, content-browser, import, export, and thumbnail operations
-to the previous `v0.1.1` baseline. The source registry currently defines 90 MCP
+to the previous `v0.1.1` baseline. The source registry currently defines 111 MCP
 tools; experimental operations must still be checked against the installed
 iClone build after restarting the plugin.
 
 | Category | Tools | What they do |
 | --- | --- | --- |
 | Diagnostics | `ping_iclone`, `get_api_version`, `get_runtime_diagnostics`, `get_application_info`, `list_content_folders`, `list_content_files` | Check connectivity, iClone 8 version/paths, and browse Smart Content folders/files. |
-| Scene and objects | `list_objects`, `get_selection`, `select_object`, `set_visibility`, `delete_object`, `clone_object`, `link_object`, `unlink_object`, `align_object`, `set_static` | Inspect, select, show/hide, delete, clone, link, unlink, and align objects. |
+| Scene and objects | `list_objects`, `get_selection`, `select_object`, `set_visibility`, `delete_object`, `clone_object`, `link_object`, `unlink_object`, `align_object`, `set_static` | Inspect, select, show/hide, delete, clone, link (also to an avatar bone, e.g. a weapon to a hand), unlink, and align objects. |
 | Projects and assets | `create_primitive`, `save_project`, `get_project_info`, `import_asset`, `load_object`, `load_alembic`, `load_motion`, `preload_motion`, `load_substance_painter_textures`, `export_fbx`, `export_obj`, `export_glb`, `save_thumbnail` | Create primitives, import objects/Alembic, load motions, apply textures, save projects, extract thumbnails, and export FBX/OBJ/GLB. OBJ/GLB/Alembic are experimental; OBJ is documented mainly for CC3. |
 | Transforms | `get_transform`, `get_object_bounds`, `set_transform`, `delete_transform_key`, `move_transform_key`, `set_transform_key_transition`, `clear_transform_keys` | Read world-space bounds, position, rotation, scale, and animation keys. |
 | Paths | `list_paths`, `get_path_info`, `follow_path`, `release_path`, `set_path_position`, `set_path_offset`, `clear_path_keys` | Inspect and control an existing iClone path. Path creation and curve-point editing are not exposed by the public Python API. |
@@ -110,6 +111,9 @@ iClone build after restarting the plugin.
 | Materials | `get_materials`, `set_material_color`, `set_material_color_channel`, `set_material_texture`, `set_texture_weight`, `set_uv_data`, `load_video_texture`, `set_material_value`, `set_material_attribute` | Inspect materials, animate color channels/UVs/texture weights, load video textures, and change documented tessellation attributes. |
 | Lights | `get_light`, `set_light` | Inspect and change activation, color, intensity, range, shadows, spot beam, IES, and rectangular/tube light settings. |
 | Avatars | `get_avatar_info`, `get_avatar_capabilities`, `get_skin_bones`, `get_animation_clips`, `set_clip_speed`, `set_clip_loop_count` | Inspect avatars, bones, components, and clips, then set clip speed and looping. |
+| Body animation (FK) | `create_motion_clip`, `get_bone_transforms`, `set_bone_keys`, `delete_bone_keys`, `mirror_clip`, `sample_clip`, `flatten_clip`, `break_clip`, `merge_clips`, `delete_clip`, `bake_fk_to_ik` | Create empty motion clips and key individual skin bones (rotation, and position for the hip) on the clip's motion layer; split, merge, mirror and bake clips. |
+| Body animation (IK) | `get_ik_effectors`, `set_ik_pose`, `add_reach_key`, `add_look_at_key` | Pose hip, hands and feet by world targets (feet stay planted when the hip moves) and key the result as bone keys; HumanIK reach to an object and head look-at. |
+| Viewport and UI | `capture_viewport`, `list_windows`, `capture_window`, `click`, `send_keys`, `reload_tools` | See the 3D view or any iClone window/dialog as an image, even when iClone is covered, and click or type in it without moving the user's mouse. `reload_tools` reloads edited tool modules. |
 | Morphs | `list_morphs`, `get_morph_weight`, `set_morph_weight` | List, read, and animate morph weights on compatible props and avatars. |
 | Face and voice | `get_face_info`, `set_auto_blink`, `set_face_expressiveness`, `add_expression_keys`, `get_viseme_info`, `add_viseme_key`, `load_vocal` | Inspect and key documented facial expressions/visemes and load vocal audio; these APIs are experimental and may be limited by the iClone build. |
 | Rendering | `get_render_settings`, `render_video` | Read the output resolution and start video rendering after explicit confirmation. |
@@ -122,6 +126,8 @@ These tools can be used to:
 - control the timeline, cameras, and lights;
 - inspect and change materials, colors, texture maps, opacity, glossiness, and self-illumination;
 - inspect avatar components, skin bones, animation clips, loop counts, and morphs;
+- author body animation from scratch with bone keys, IK targets, reach and look-at keys;
+- look at the viewport and iClone dialogs and click through them;
 - load or pre-load motions, apply Substance Painter texture folders, and export a single object as FBX;
 - inspect the current render size and start a render only after explicit confirmation;
 - inspect iClone mocap state and native TCP/UDP availability without opening external connections.

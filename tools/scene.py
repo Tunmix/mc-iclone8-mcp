@@ -1,6 +1,6 @@
 import RLPy
 from tools.objects import find_by_name
-from tools.common import rl_string
+from tools.common import frame_time, rl_string
 
 
 _TYPES = {
@@ -68,6 +68,13 @@ def clone_object(args):
 def link_object(args):
     obj = find_by_name(args["name"])
     target = find_by_name(args["target_name"])
+    if args.get("target_bone"):
+        # Link to a bone of the target avatar, e.g. a weapon to CC_Base_R_Hand.
+        skeleton = target.GetSkeletonComponent() if hasattr(target, "GetSkeletonComponent") else None
+        bones = [bone for bone in skeleton.GetSkinBones() if bone.GetName() == args["target_bone"]] if skeleton is not None else []
+        if not bones:
+            raise ValueError("Bone %s not found on %s (list names with get_skin_bones)" % (args["target_bone"], target.GetName()))
+        target = bones[0]
     alignments = {
         "none": "ELinkObjectAlignType_None",
         "position": "ELinkObjectAlignType_Position",
@@ -76,7 +83,8 @@ def link_object(args):
     alignment = args.get("alignment", "position_and_rotation")
     if alignment not in alignments:
         raise ValueError("Unsupported alignment: %s" % alignment)
-    result = obj.LinkTo(target, getattr(RLPy, alignments[alignment]), RLPy.RGlobal.GetTime())
+    # Links are keyed in time: the object follows the target only from this frame on.
+    result = obj.LinkTo(target, getattr(RLPy, alignments[alignment]), frame_time(args.get("frame")))
     if result != RLPy.RStatus.Success:
         raise RuntimeError("iClone could not link object")
     return {"status": "ok", "name": obj.GetName(), "target": target.GetName(), "alignment": alignment}
@@ -123,7 +131,7 @@ def register(registry):
     registry["set_visibility"] = {"handler": set_visibility, "main_thread": True, "description": "Shows or hides an object at the current time.", "inputSchema": {"type": "object", "properties": {"name": {"type": "string"}, "visible": {"type": "boolean"}}, "required": ["name", "visible"]}}
     registry["delete_object"] = {"handler": delete_object, "main_thread": True, "description": "Permanently deletes an object from the scene.", "inputSchema": {"type": "object", "properties": {"name": {"type": "string"}}, "required": ["name"]}}
     registry["clone_object"] = {"handler": clone_object, "main_thread": True, "description": "Clones a scene object, with an optional new name.", "inputSchema": {"type": "object", "properties": {"name": {"type": "string"}, "new_name": {"type": "string"}}, "required": ["name"]}}
-    registry["link_object"] = {"handler": link_object, "main_thread": True, "description": "Links an object to a target at the current frame.", "inputSchema": {"type": "object", "properties": {"name": {"type": "string"}, "target_name": {"type": "string"}, "alignment": {"type": "string", "enum": ["none", "position", "position_and_rotation"]}}, "required": ["name", "target_name"]}}
+    registry["link_object"] = {"handler": link_object, "main_thread": True, "description": "Links an object to a target from a frame on (default: current frame; use 0 to link for the whole timeline). With target_bone, links to that bone of the target avatar (e.g. a weapon to CC_Base_R_Hand) so it follows the animation.", "inputSchema": {"type": "object", "properties": {"name": {"type": "string"}, "target_name": {"type": "string"}, "target_bone": {"type": "string"}, "frame": {"type": "integer", "minimum": 0}, "alignment": {"type": "string", "enum": ["none", "position", "position_and_rotation"]}}, "required": ["name", "target_name"]}}
     registry["unlink_object"] = {"handler": unlink_object, "main_thread": True, "description": "Unlinks an object from its target at the current frame.", "inputSchema": {"type": "object", "properties": {"name": {"type": "string"}}, "required": ["name"]}}
     registry["align_object"] = {"handler": align_object, "main_thread": True, "description": "Aligns an object to a target along an axis or by rotation.", "inputSchema": {"type": "object", "properties": {"name": {"type": "string"}, "target_name": {"type": "string"}, "axis": {"type": "string", "enum": ["x", "y", "z", "rotation"]}, "to_pivot": {"type": "boolean"}}, "required": ["name", "target_name"]}}
     registry["set_static"] = {"handler": set_static, "main_thread": True, "description": "Enables or disables an object's static status.", "inputSchema": {"type": "object", "properties": {"name": {"type": "string"}, "static": {"type": "boolean"}}, "required": ["name", "static"]}}

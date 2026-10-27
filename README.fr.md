@@ -22,10 +22,10 @@ thread principal d’iClone avant leur exécution.
    <iClone 8>\Bin64\OpenPlugin\mc-iclone8-mcp
    ```
 
-2. Lancer iClone 8 et charger le plugin.
-3. Ouvrir **Plugins → mc-iclone8-mcp → Ouvrir le serveur MCP**.
-4. Cliquer sur **Démarrer**. Le statut doit indiquer
-   `http://127.0.0.1:8766/mcp`.
+2. Lancer iClone 8. Le plugin démarre automatiquement le serveur MCP sur
+   `http://127.0.0.1:8766/mcp` et l’arrête à la fermeture d’iClone.
+3. **Plugins → mc-iclone8-mcp → Ouvrir le serveur MCP** affiche le statut et
+   les boutons **Stop**/**Start** ; **Start** recharge aussi le code Python.
 
 Le serveur utilise volontairement `127.0.0.1` : il ne peut être appelé que par
 des applications exécutées sur le même ordinateur qu’iClone.
@@ -78,7 +78,7 @@ et VS Code sont disponibles en [français](docs/agent-configs.fr.md) et en
    ```
 
    Ne pas mélanger d’anciens fichiers `tools` avec la nouvelle version.
-5. Relancer iClone 8, charger le plugin, puis cliquer sur **Démarrer**.
+5. Relancer iClone 8 ; le serveur démarre avec lui.
 6. Vérifier l’URL locale et relancer/recharger l’agent MCP afin qu’il relise la
    liste des outils.
 
@@ -104,6 +104,9 @@ La version `v0.1.0` expose 60 outils MCP :
 | Matériaux | `get_materials`, `set_material_color`, `set_material_color_channel`, `set_material_texture`, `set_texture_weight`, `set_uv_data`, `load_video_texture`, `set_material_value`, `set_material_attribute` | Lire les matériaux, animer les canaux de couleur/UV/poids de texture, charger des textures vidéo et modifier les attributs de tessellation documentés. |
 | Lumières | `get_light`, `set_light` | Lire et modifier activation, couleur, intensité, portée, ombres, faisceau spot, IES et réglages rectangle/tube. |
 | Avatars | `get_avatar_info`, `get_avatar_capabilities`, `get_skin_bones`, `get_animation_clips`, `set_clip_speed`, `set_clip_loop_count` | Inspecter les avatars, os, composants et clips, puis régler vitesse et boucles de lecture. |
+| Animation du corps (FK) | `create_motion_clip`, `get_bone_transforms`, `set_bone_keys`, `delete_bone_keys`, `mirror_clip`, `sample_clip`, `flatten_clip`, `break_clip`, `merge_clips`, `delete_clip`, `bake_fk_to_ik` | Créer des clips vides et poser des clés sur chaque os (rotation, et position pour la hanche) dans la couche de mouvement ; couper, fusionner, refléter et cuire les clips. |
+| Animation du corps (IK) | `get_ik_effectors`, `set_ik_pose`, `add_reach_key`, `add_look_at_key` | Placer hanche, mains et pieds sur des cibles du monde (les pieds restent au sol quand la hanche bouge) et enregistrer le résultat en clés d’os ; atteinte HumanIK d’un objet et regard de la tête. |
+| Vue et interface | `capture_viewport`, `list_windows`, `capture_window`, `click`, `send_keys`, `reload_tools` | Voir la vue 3D ou toute fenêtre/boîte de dialogue d’iClone en image, même masquée, et y cliquer ou taper sans bouger la souris de l’utilisateur. `reload_tools` recharge les modules d’outils modifiés. |
 | Morphs | `list_morphs`, `get_morph_weight`, `set_morph_weight` | Lister, lire et animer les poids de morphs sur props et avatars compatibles. |
 | Visage et voix | `get_face_info`, `set_auto_blink`, `set_face_expressiveness`, `add_expression_keys`, `get_viseme_info`, `add_viseme_key`, `load_vocal` | Inspecter et créer des clés d’expressions/visèmes documentées et charger une voix ; ces API sont expérimentales et peuvent être limitées par la build iClone. |
 | Rendu | `get_render_settings`, `render_video` | Lire la résolution et lancer un rendu vidéo après confirmation explicite. |
@@ -112,7 +115,7 @@ La version `v0.1.0` expose 60 outils MCP :
 La branche de développement ajoute aux fonctions de la version `v0.1.1` les
 commandes documentées iClone 8 pour les caméras, matériaux, lumières,
 expressions/visèmes, navigation du contenu, import, export et miniatures. Le
-registre source contient actuellement 90 outils MCP ; les fonctions
+registre source contient actuellement 111 outils MCP ; les fonctions
 expérimentales doivent être vérifiées dans la version iClone installée après
 redémarrage du plugin.
 

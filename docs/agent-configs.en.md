@@ -1,6 +1,6 @@
 # Configure agents with mc-iclone8-mcp
 
-Start the server in iClone 8 before connecting an agent:
+The server starts with iClone 8 (see the plugin's status dialog). Connect agents to:
 
 ```text
 http://127.0.0.1:8766/mcp
