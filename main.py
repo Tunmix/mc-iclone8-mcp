@@ -100,7 +100,7 @@ if _ICLONE_AVAILABLE:
 def show_dialog():
     global _dialog
     if not _ICLONE_AVAILABLE:
-        raise RuntimeError("mc-iclone8-mcp doit être chargé dans iClone 8")
+        raise RuntimeError("mc-iclone8-mcp must be loaded inside iClone 8")
     if _dialog is not None:
         _dialog.Show()
         return
@@ -111,23 +111,23 @@ def show_dialog():
     _dialog.RegisterEventCallback(callback)
     dialog = wrapInstance(int(_dialog.GetWindow()), QtWidgets.QDialog)
     layout = dialog.layout()
-    label = QtWidgets.QLabel("Serveur MCP iClone 8\nPort 8766\nAPI documentée et commandes exécutées dans le thread iClone.")
+    label = QtWidgets.QLabel("iClone 8 MCP server\nPort 8766\nDocumented API; commands run on the iClone main thread.")
     layout.addWidget(label)
-    status = QtWidgets.QLabel("STATUT : arrêté")
+    status = QtWidgets.QLabel("STATUS: stopped")
     layout.addWidget(status)
-    start_button = QtWidgets.QPushButton("Démarrer")
-    stop_button = QtWidgets.QPushButton("Arrêter")
+    start_button = QtWidgets.QPushButton("Start")
+    stop_button = QtWidgets.QPushButton("Stop")
     layout.addWidget(start_button)
     layout.addWidget(stop_button)
 
     def start_from_ui():
         try:
-            status.setText("STATUT : en écoute sur " + start_server())
+            status.setText("STATUS: listening on " + start_server())
         except Exception as error:
-            status.setText("STATUT : erreur - " + str(error))
+            status.setText("STATUS: error - " + str(error))
 
     def stop_from_ui():
-        status.setText("STATUT : arrêté" if stop_server() else "STATUT : déjà arrêté")
+        status.setText("STATUS: stopped" if stop_server() else "STATUS: already stopped")
 
     start_button.clicked.connect(start_from_ui)
     stop_button.clicked.connect(stop_from_ui)
@@ -136,17 +136,17 @@ def show_dialog():
 
 def initialize_plugin():
     if not _ICLONE_AVAILABLE:
-        raise RuntimeError("mc-iclone8-mcp doit être chargé dans iClone 8")
+        raise RuntimeError("mc-iclone8-mcp must be loaded inside iClone 8")
     main_window = wrapInstance(int(RLPy.RUi.GetMainWindow()), QtWidgets.QMainWindow)
     menu = main_window.menuBar().findChild(QtWidgets.QMenu, "mc_iclone8_mcp_menu")
     if menu is None:
         menu = wrapInstance(int(RLPy.RUi.AddMenu("mc-iclone8-mcp", RLPy.EMenu_Plugins)), QtWidgets.QMenu)
         menu.setObjectName("mc_iclone8_mcp_menu")
-    action = menu.addAction("Ouvrir le serveur MCP")
+    action = menu.addAction("Open MCP server")
     action.triggered.connect(show_dialog)
 
 
 def run_script():
     if not _ICLONE_AVAILABLE:
-        raise RuntimeError("mc-iclone8-mcp doit être chargé dans iClone 8")
+        raise RuntimeError("mc-iclone8-mcp must be loaded inside iClone 8")
     initialize_plugin()
