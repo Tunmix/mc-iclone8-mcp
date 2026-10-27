@@ -88,12 +88,10 @@ if _ICLONE_AVAILABLE:
             RLPy.RDialogCallback.__init__(self)
 
         def OnDialogClose(self):
+            # Closing the window only drops the UI; the server keeps running
+            # until the Stop button is used or iClone exits.
             global _dialog
             _dialog = None
-            try:
-                threading.Thread(target=stop_server, name="mc-iclone8-mcp-stop", daemon=True).start()
-            except Exception as error:
-                print("mc-iclone8-mcp close error: %s" % error)
             return True
 
 
@@ -113,7 +111,10 @@ def show_dialog():
     layout = dialog.layout()
     label = QtWidgets.QLabel("iClone 8 MCP server\nPort 8766\nDocumented API; commands run on the iClone main thread.")
     layout.addWidget(label)
-    status = QtWidgets.QLabel("STATUS: stopped")
+    with _lock:
+        running = _server is not None and _server.running
+        url = "http://%s:%d/mcp" % (_server.host, _server.port) if running else None
+    status = QtWidgets.QLabel("STATUS: listening on " + url if running else "STATUS: stopped")
     layout.addWidget(status)
     start_button = QtWidgets.QPushButton("Start")
     stop_button = QtWidgets.QPushButton("Stop")
